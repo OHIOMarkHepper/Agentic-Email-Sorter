@@ -1,0 +1,33 @@
+AgentMail Experimental Results
+
+Dataset Size: 10,000+ emails
+
+Clustering Method:
+TF-IDF + KMeans
+
+Best K:
+8 clusters
+
+Best Silhouette Score:
+0.3103
+
+Detected Categories:
+
+1. Surveys & Feedback
+2. Meetings & Reminders
+3. Daily Standups / Work Updates
+4. Software & Security Alerts
+5. Social / Informal Messages
+6. Orders & Shipping
+7. Blog / Community Updates
+8. Photo / File Sharing
+
+Qualitative Results:
+Clusters were coherent and interpretable. LLM-generated summaries accurately identified semantic meanings.
+
+System Strengths:
+
+* Interactive retraining
+* Human-readable labels
+* Flexible clustering modes
+* End-to-end runnable pipeline

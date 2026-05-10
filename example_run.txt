@@ -1,0 +1,86 @@
+python3 main.py
+Please enter the path to your data file (e.g., 'data/emails.csv'): ./emaildata/email_classification_dataset.csv
+Detected schema: {'text_col': 'email', 'label_col': None, 'columns': ['id', 'email', 'label']}
+Enter your Gemini API key: AIzaSyD2QfXHI731Ju59bIZl-b0vCpeK2wAqUpc
+Would you like suggested clusters from KMeans or user-defined clusters?
+type 'k' for KMeans or 'u' for user-defined
+k
+KMeans selected K=8, score=0.3041
+KMeans selected K=8, score=0.3103
+
+--- Cluster Review ---
+You can now chat with the agent about your clusters.
+Special commands:
+  relabel <id> <new name>  — rename a cluster (e.g. 'relabel 3 Spam')
+  retrain <k>              — retrain with a specific number of clusters
+  done                     — finish review and proceed
+
+Current clusters:
+  [0] Cluster 0 — 897 emails — top words: survey, feedback, feedback moments, feedback team, complete short
+  [1] Cluster 1 — 813 emails — top words: come prepared, come, conference room, conference, best john
+  [2] Cluster 2 — 1713 emails — top words: good morning, daily, daily stand, blockers thanks, blockers
+  [3] Cluster 3 — 3222 emails — top words: software, update, regarding, security, hours
+  [4] Cluster 4 — 830 emails — top words: catch soon, catch, event, cheers, friend thinking
+  [5] Cluster 5 — 855 emails — top words: order, best regards, business days, tracking page, items shipped
+  [6] Cluster 6 — 822 emails — top words: blog, topic, blog sincerely, read, blog link
+  [7] Cluster 7 — 848 emails — top words: uploaded photos, uploaded, view, view link, trip shared
+
+Agent: Here's an analysis of each cluster:
+
+*   **Cluster 0: Surveys & Feedback**
+    *   **Explanation:** The top words "survey," "feedback," "complete short," and "value feedback" clearly indicate emails related to soliciting or providing feedback through surveys.
+    *   **Sense:** Makes perfect sense.
+
+*   **Cluster 1: Meeting Invitations & Reminders**
+    *   **Explanation:** Words like "conference room," "alpha meeting," "tomorrow 10," "discuss q3," and "come prepared" strongly suggest emails about upcoming meetings.
+    *   **Sense:** Makes perfect sense.
+
+*   **Cluster 2: Daily Project Updates / Stand-ups**
+    *   **Explanation:** "Good morning," "daily stand," "blockers," "progress," and "project manager" point to routine project updates or stand-up meeting communications. This is the largest cluster, which is common for frequent internal updates.
+    *   **Sense:** Makes perfect sense.
+
+*   **Cluster 3: Software & Security Alerts**
+    *   **Explanation:** "Software," "update," "security," "24 hours," and "customer response" indicate important announcements, likely concerning software updates, security patches, or related customer notifications. This is the largest cluster, suggesting organization-wide importance.
+    *   **Sense:** Makes perfect sense.
+
+*   **Cluster 4: Informal Social Communications**
+    *   **Explanation:** "Catch soon," "cheers," "hey friend," "let catch," and "thinking" suggest informal, friendly, and social interactions, possibly arranging meet-ups or casual chats. "Event" might refer to social events.
+    *   **Sense:** Makes perfect sense.
+
+*   **Cluster 5: Order & Shipping Notifications**
+    *   **Explanation:** "Order," "tracking page," "items shipped," "track order," and "business days" clearly define emails related to e-commerce transactions, shipping status, and delivery information.
+    *   **Sense:** Makes perfect sense.
+
+*   **Cluster 6: Blog & Community Updates**
+    *   **Explanation:** "Blog," "read," "blog link," "community," and "updates" indicate emails sharing new blog posts, articles, or general community news.
+    *   **Sense:** Makes perfect sense.
+
+*   **Cluster 7: File & Photo Sharing**
+    *   **Explanation:** "Uploaded photos," "view link," "shared drive," and "ve uploaded" strongly suggest emails notifying recipients about shared files or photos, likely from a cloud storage or shared drive.
+    *   **Sense:** Makes perfect sense.
+
+Overall, the groupings make a lot of sense, with each cluster's top words providing a clear and coherent theme. The varying sizes also seem reasonable for the types of email communications represented.
+
+You: done
+Exiting cluster review.
+
+Training complete.
+
+--- Email Classifier ---
+Enter an email to classify it. Type 'done' to exit.
+
+Email text: SAVE NOW ON 2 GAMES YOU’VE WISHED FOR!
+FINAL FANTASY VII REMAKE INTERGRADE
+-50%    $39.99  $19.99
+
+SPECIAL PROMOTION! Offer ends  Classified as: 3
+
+Email text:  May 7 10:00am PDT
+Cloud Strife, an ex-SOLDIER operative, descends on the mako-p  Classified as: 3
+
+Email text: owered city of Midgar. The world of the timeless classic FINAL F  Classified as: 3
+
+Email text: Email text: ANTASY VII is reborn, using cutting-edge graphics technology, a   Classified as: 3
+
+
+  Classified as: 3
