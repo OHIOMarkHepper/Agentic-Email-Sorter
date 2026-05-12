@@ -2,10 +2,11 @@ from config import get_default_config
 from data import load_data
 from vectorizer import build_vectorizer
 from clustering import select_best_k, get_top_words
-from agent import run_agent_loop, EmailAgent
+from agent import EmailAgent
 from strategies import KMeansStrategy, UserDefinedStrategy
 from llm import generate_category_examples, chat_with_agent, get_client
 import numpy as np
+
 
 def get_multiline_input():
     print("Paste email. Type END on a new line when finished:")
@@ -17,21 +18,23 @@ def get_multiline_input():
         lines.append(line)
     return "\n".join(lines).strip()
 
+
 def classify_loop(agent):
     """Lets the user input emails and see how the agent classifies them."""
     print("\n--- Email Classifier ---")
     print("Enter an email to classify it. Type 'done' to exit.\n")
 
     while True:
-        email = get_multiline_input()
-        if email.lower() == "done":
+        user_email = get_multiline_input()
+        if user_email.lower() == "done":
             print("Exiting classifier.")
             break
-        if not email:
+        if not user_email:
             continue
 
-        label = agent.classify(email)
+        label = agent.classify(user_email)
         print(f"  Classified as: {label}\n")
+
 
 def review_clusters_chat(agent, texts, vectorizer, config):
     """Interactive chat loop for reviewing and adjusting KMeans clustering results."""
@@ -122,42 +125,37 @@ def review_clusters_chat(agent, texts, vectorizer, config):
         reply, history = chat_with_agent(cluster_summaries, agent.cluster_names, history)
         print(f"\nAgent: {reply}\n")
 
+
 def clustering_fn(X, config):
     model, labels, k, score = select_best_k(X)
     return model, labels
 
+
 def report_fn(model, feature_names):
     return get_top_words(model, feature_names)
 
+
 def main():
     config = get_default_config()
-    vectorizer = build_vectorizer(config)
 
     filepath = input("Please enter the path to your data file (e.g., 'data/emails.csv'): ").strip()
     df, texts, schema = load_data(filepath)
+
     vectorizer = build_vectorizer(config)
     X = vectorizer.fit_transform(texts)
 
     get_client()  # Ensure Gemini client is initialized before proceeding
 
-    X = vectorizer.fit_transform(texts)
-
     print("Would you like suggested clusters from KMeans or user-defined clusters?")
     print("type 'k' for KMeans or 'u' for user-defined")
 
     if input().lower() == 'k':
-        use_kmeans = True
-    else:
-        use_kmeans = False
-
-    if use_kmeans:
         strategy = KMeansStrategy(config)
         strategy.fit(texts, vectorizer)
         agent = EmailAgent(strategy, vectorizer)
         agent.train(texts)
         review_clusters_chat(agent, texts, vectorizer, config)
         print("\nTraining complete.")
-        classify_loop(agent)
     else:
         print("Enter category names one at a time. The LLM will suggest example phrases for each.")
         print("Type 'done' when finished.\n")
@@ -183,11 +181,9 @@ def main():
         agent = EmailAgent(strategy, vectorizer)
         agent.train(texts)
         print("\nTraining complete.")
-        classify_loop(agent)
-    
+
     classify_loop(agent)
 
-    print("\nFinal result:", result)
 
 if __name__ == "__main__":
     main()

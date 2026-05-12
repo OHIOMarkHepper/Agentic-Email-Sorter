@@ -79,7 +79,7 @@ class KMeansStrategy(ClusteringStrategy):
             else:
                 labels.append(np.argmax(row))
         
-        if label == -1:
+        if labels[0] == -1:
             return "Unknown / Other"
 
         return labels
