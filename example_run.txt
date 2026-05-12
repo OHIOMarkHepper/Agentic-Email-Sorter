@@ -1,7 +1,7 @@
 python3 main.py
 Please enter the path to your data file (e.g., 'data/emails.csv'): ./emaildata/email_classification_dataset.csv
 Detected schema: {'text_col': 'email', 'label_col': None, 'columns': ['id', 'email', 'label']}
-Enter your Gemini API key: AIzaSyD2QfXHI731Ju59bIZl-b0vCpeK2wAqUpc
+Enter your Gemini API key:
 Would you like suggested clusters from KMeans or user-defined clusters?
 type 'k' for KMeans or 'u' for user-defined
 k
