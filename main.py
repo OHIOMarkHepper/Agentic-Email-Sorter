@@ -1,10 +1,10 @@
 from config import get_default_config
-from data import load_data
-from vectorizer import build_vectorizer
-from clustering import select_best_k, get_top_words
-from agent import EmailAgent
-from strategies import KMeansStrategy, UserDefinedStrategy
-from llm import generate_category_examples, chat_with_agent, get_client
+from processing.data import load_data
+from ml.vectorizer import build_vectorizer
+from ml.clustering import select_best_k, get_top_words
+from agent.agent import EmailAgent
+from ml.strategies import KMeansStrategy, UserDefinedStrategy
+from agent.llm import generate_category_examples, chat_with_agent, get_client
 import numpy as np
 
 
