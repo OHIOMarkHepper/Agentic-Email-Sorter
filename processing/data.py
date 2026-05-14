@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 from email.utils import parseaddr
 
+
 @dataclass
 class EmailRecord:
     id: str
@@ -148,58 +149,33 @@ def load_data(filepath):
     # Check if file exists
     if not filepath.exists():
         raise ValueError(f"File '{filepath}' does not exist.")
-    
+
+    # db path
     if filepath.suffix.lower() == ".db":
         return load_from_db(filepath)
 
     # mbox path
     if filepath.suffix.lower() == ".mbox":
-        mbox = mailbox.mbox(filepath)
-        records = []
-
-        for i, msg in enumerate(mbox):
-            if i % 1000 == 0 and i > 0:
-                print(f"Processed {i} messages...")
-            sender = msg.get("from", "")
-            body = get_body(msg)
-
-            record = EmailRecord(
-                id=msg.get("message-id", str(i)).strip(),
-                thread_id=msg.get("in-reply-to", None),
-                sender=sender,
-                sender_domain=extract_sender_domain(sender),
-                recipients=get_recipients(msg),
-                subject=msg.get("subject", ""),
-                body=body,
-                timestamp=msg.get("date", None),
-                has_attachment=has_attachment(msg),
-                labels=[],   # mbox has no native labels; extend here if needed
-                raw_source=msg.as_string(),
-            )
-            records.append(record.__dict__)
-
-        df = pd.DataFrame(records)
-        texts = df["body"].astype(str).fillna("").tolist()
-        schema = {
-            "text_col": "body",
-            "label_col": None,
-            "columns": list(df.columns)
-        }
-
-        print("Detected schema (mbox):", schema)
-        print("Would you like to create a saved schema for future use? (y/n)")
-        if input().lower() == "y":
-            save_to_db(df, "./emaildata/emails.db")
-        
-        return df, texts, schema
-
+        from processing.mbox_loader import MboxSource
+        source = MboxSource(filepath)
+        return source.get_emails()
+    
+    # imap path (not implemented yet)
+    if filepath.suffix.lower() == ".imap":
+        raise NotImplementedError("IMAP loading not implemented yet.")
+        from processing.imap_loader import IMAPSource
+        # source = IMAPSource(...)
+        # return source.get_emails()
+    
     # CSV path
-    df = pd.read_csv(filepath)
-    schema = detect_schema(df)
-    texts = df[schema["text_col"]].astype(str).fillna("").tolist()
-
-    print("Detected schema:", schema)
-    return df, texts, schema
+    if filepath.suffix.lower() == ".csv":
+        df = pd.read_csv(filepath)
+        schema = detect_schema(df)
+        texts = df[schema["text_col"]].astype(str).fillna("").tolist()
+        print("Detected schema:", schema)
+        return df, texts, schema
+    
+    raise ValueError(f"Unsupported file type: {filepath.suffix}")
 
 def save_to_db(df, db_path):
     """save_to_db: Persists a DataFrame of EmailRecords to a SQLite database.
@@ -266,3 +242,36 @@ def load_from_db(db_path):
  
     print(f"Loaded {len(df)} records from {db_path}")
     return df, texts, schema
+
+def create_cluster_schema(df, text_col):
+    """create_cluster_schema: Creates a schema dict for clustering based on the DataFrame and text column.
+
+    Args:
+        df (pandas.DataFrame): The DataFrame containing the email data.
+        text_col (str): The name of the column containing the email body text.
+    Returns:
+        dict: A schema dictionary with keys 'text_col', 'label_col', and 'columns'.
+    """
+    schema = {
+        "text_col": text_col,
+        "label_col": None,
+        "columns": list(df.columns)
+    }
+    print("Created cluster schema:", schema)
+    return schema
+
+def save_cluster_schema(schema, name):
+    """save_cluster_schema: Saves a detected schema to a db file for future reuse.
+
+    Args:
+        schema (dict): The schema dictionary to save.
+        name (str): A name for the schema, used to generate the filename.
+    Returns:
+        str: The path to the saved schema file.
+    """
+    filename = f"{name}_schema.db"
+    path = Path("./emaildata") / filename
+    with sqlite3.connect(path) as conn:
+        pd.DataFrame([schema]).to_sql("schemas", conn, if_exists="replace", index=False)
+    print(f"Saved schema to {path}")
+    return str(path)

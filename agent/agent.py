@@ -4,7 +4,6 @@ import numpy as np
 import hashlib, json
 
 
-
 class EmailAgent:
 
     def __init__(self, strategy, vectorizer, llm_enabled=True):
