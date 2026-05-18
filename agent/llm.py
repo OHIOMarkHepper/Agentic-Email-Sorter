@@ -1,7 +1,9 @@
 import json
 import hashlib
-from cache import LLM_CACHE
+from cache.cache import LLM_CACHE
 from google import genai
+from ml.strategies import KMeansStrategy
+import numpy as np
 import os
 
 _client = None
@@ -152,7 +154,7 @@ def review_clusters_chat(agent, texts, vectorizer, config):
 
     def build_summaries(agent):
         report = agent.report
-        labels = agent.strategy.labels
+        labels = agent.cluster_names
         unique, counts = np.unique(labels, return_counts=True)
         size_map = dict(zip(unique, counts))
         return {
@@ -172,10 +174,11 @@ def review_clusters_chat(agent, texts, vectorizer, config):
     print_summary(agent)
 
     cluster_summaries = build_summaries(agent)
-    opening_prompt = "Please name each cluster and explain whether the groupings make sense, based on the top words and sizes shown."
+    opening_prompt = "Please name each cluster in a list in the format: <cluster_id>: <name>. Afterwards, provide an overall assessment of the clustering quality and any issues you see with the results."
     history = [{"role": "user", "content": opening_prompt}]
     reply, history = chat_with_agent(cluster_summaries, agent.cluster_names, history)
     print(f"Agent: {reply}\n")
+
 
     while True:
         user_input = input("You: ").strip()

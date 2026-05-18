@@ -1,5 +1,7 @@
-from agent.clustering import select_best_k
-from Email_Agent.cache import CACHE
+import email
+
+from ml.clustering import select_best_k
+from cache.cache import CACHE
 
 def automl_train(X, vectorizer):
     """automl_train _summary_

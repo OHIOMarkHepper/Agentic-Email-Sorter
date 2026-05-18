@@ -1,10 +1,14 @@
 from agent.agent import EmailAgent
 from agent.automl import automl_train
-from agent.clustering import get_top_words
+from agent.llm import generate_category_examples, chat_with_agent, get_client, analyze_clusters, get_llm_analysis
+from ml.clustering import get_top_words, select_best_k
 from ml.vectorizer import build_vectorizer
 from ml.strategies import KMeansStrategy, UserDefinedStrategy
 from agent.llm import generate_category_examples, chat_with_agent, get_client
 from processing.input import get_multiline_input
+from processing.data import load_data
+from config.config import get_default_config
+from database.queries import DatabaseManager
 import numpy as np
 
 def classify_loop(agent):
@@ -50,15 +54,42 @@ def review_clusters_chat(agent, texts, vectorizer, config):
             size = info.get("size", "?")
             print(f"  [{cid}] {name} — {size} emails — top words: {words}")
         print()
+    
+    def get_names_from_reply(reply):
+        name_map = {}
+        for line in reply.split("\n"):
+            match = re.match(r"(\d+):\s*(.+)", line)
+            if match:
+                cid, name = match.groups()
+                name_map[int(cid)] = name.strip()
+                name_map[cid] = name.strip()
+        return name_map
 
     print("Current clusters:")
     print_summary(agent)
 
     cluster_summaries = build_summaries(agent)
-    opening_prompt = "Please name each cluster and explain whether the groupings make sense, based on the top words and sizes shown."
+
+    opening_prompt = "Please name each cluster in a list in the format: JSON only! {<cluster_id>: <name>, ...}. Afterwards, provide an overall assessment of the clustering quality and any issues you see with the results."
     history = [{"role": "user", "content": opening_prompt}]
     reply, history = chat_with_agent(cluster_summaries, agent.cluster_names, history)
+    
+    # rename clusters based on LLM reply
+    import re
+    name_map = get_names_from_reply(reply)
+    for cid, name in name_map.items():
+        agent.cluster_names[cid] = name
+        agent.cluster_names[str(cid)] = name
+        
+
     print(f"Agent: {reply}\n")
+    
+    
+    for cid, info in cluster_summaries.items():
+        name = agent.cluster_names.get(cid, agent.cluster_names.get(str(cid), f"Cluster {cid}"))
+        print(f"Cluster {cid} ({name}):")
+        print(f"  Size: {info.get('size', '?')}")
+        print(f"  Top words: {', '.join(info.get('top_words', [])[:10])}")
 
     while True:
         user_input = input("You: ").strip()
@@ -168,8 +199,23 @@ def user_loop(filepath, config):
         agent = EmailAgent(strategy, vectorizer)
         agent.train(texts)
         print("\nTraining complete.")
+    
+    print("Would you like to save the classified emails to a database? (y/n)")
+    if input().lower() == 'y':
+        db_path = input("Enter the path for the database (e.g., './email_clusters.db'): ").strip()
+        dbManager = DatabaseManager(db_path)
+        dbManager.create_clusters_table()
+        dbManager.save_emails_bulk([
+            {
+                "cluster_id": int(label),
+                "cluster_label": agent.cluster_names.get(int(label), 
+                                 agent.cluster_names.get(str(label), f"Cluster {label}")),
+                "body": text,
+            }
+            for text, label in zip(texts, agent.strategy.labels)
+        ])
+        print(f"Classified emails saved to {db_path}.")
+    else:
+        print("Classified emails not saved to a database.")
 
     classify_loop(agent)
-
-
-

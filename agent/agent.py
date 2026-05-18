@@ -1,4 +1,4 @@
-from cache import CACHE, CLUSTER_STATE
+from cache.cache import CACHE, CLUSTER_STATE
 from agent.llm import get_llm_analysis
 import numpy as np
 import hashlib, json
@@ -36,6 +36,8 @@ class EmailAgent:
         return {
             str(k): v for k, v in report.items()
         }
+    
+    
 
 
 def get_signature(labels, report):
