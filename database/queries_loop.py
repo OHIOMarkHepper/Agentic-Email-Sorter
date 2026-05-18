@@ -3,6 +3,8 @@ import pandas as pd
 
 
 class queries_loop:
+    """ A class that handles a database and its interactions with the user
+    """
     def __init__(self, agent, db_manager, db_path):
         self.agent = agent
         self.db_manager = db_manager
@@ -42,8 +44,8 @@ class queries_loop:
         Returns:
             pd.DataFrame: A DataFrame containing the emails in the specified cluster.
         """
-        results = self.agent.db_manager.query_emails_by_cluster(cluster_label)
-        df = pd.DataFrame(results, columns=self.agent.db_manager.get_column_names())
+        results = self.db_manager.query_emails_by_cluster(cluster_label)
+        df = pd.DataFrame(results, columns=self.db_manager.get_column_names())
         print(f"Emails in cluster '{cluster_label}':")
-        print(df[["id", "sender", "subject", "timestamp"]])
+        print(df[["id", "cluster_id", "cluster_label"]])
         return df
