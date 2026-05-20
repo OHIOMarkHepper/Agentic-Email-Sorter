@@ -46,3 +46,5 @@ def get_top_words(model, feature_names, top_n=10):
 
     return clusters
 
+def assign__clusters(model, X):
+    return model.predict(X)

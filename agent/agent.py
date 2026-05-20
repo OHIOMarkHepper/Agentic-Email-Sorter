@@ -5,6 +5,8 @@ import hashlib, json
 
 
 class EmailAgent:
+    """EmailAgent is the main class that handles the training and classification of emails using a specified strategy and vectorizer. 
+       It also integrates LLM analysis for cluster interpretability."""
 
     def __init__(self, strategy, vectorizer, llm_enabled=True):
         self.strategy = strategy

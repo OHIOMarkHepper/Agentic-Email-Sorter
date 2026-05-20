@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 
 class DatabaseManager:
+    """ A class that handles SQLite queries and database management
+    """
     def __init__(self, db_path: str):
         if not db_path.endswith(".db"):
             raise ValueError("db_path must point to a .db file")
@@ -50,6 +52,19 @@ class DatabaseManager:
 
     @staticmethod
     def _sanitize(name: str) -> str:
+        """ Sanitizes user-input for cohesion and security purposes
+
+        Args:
+            name (str): the user-input string to sanitize
+
+        Raises:
+            TypeError: if the input is not a string
+            ValueError: if the input is empty or starts with a non-alphabetic character
+            ValueError: if the input is too long
+
+        Returns:
+            str: the sanitized string
+        """
         if not isinstance(name, str):
             raise TypeError("Column name must be a string")
         cleaned = re.sub(r"[^\w]", "_", name.strip()).lower()

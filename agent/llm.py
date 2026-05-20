@@ -46,6 +46,9 @@ def get_client():
     return _client
 
 class LLMAnalysis:
+    """ LLMAnalysis handles the analysis of clustering results using a language model, with caching to avoid redundant calls.
+        It generates summaries of clusters and provides feedback on clustering quality, issues, and suggestions for improvement
+    """
     def __init__(self):
         self.cache = LLM_CACHE
 
@@ -74,9 +77,8 @@ class LLMAnalysis:
         return call_gemini(analyze_clusters(cluster_summaries))
 
 
-
-
 def call_gemini(prompt):
+    """call_gemini sends a prompt to the Gemini API and returns the response text."""
     response = get_client().models.generate_content(
         model="gemini-2.5-flash",
         contents=prompt
@@ -85,11 +87,20 @@ def call_gemini(prompt):
 
 
 def hash_clusters(cluster_summaries):
+    """ hash_clusters produces a stable hash of the current clustering summaries for caching purposes.
+
+    Args:
+        cluster_summaries (dict): A dictionary containing summaries of the clusters, including top words and sizes.
+
+    Returns:
+        str: A hash string representing the current state of the cluster summaries.
+    """
     raw = json.dumps(cluster_summaries, sort_keys=True).encode()
     return hashlib.md5(raw).hexdigest()
 
 
 def analyze_clusters(cluster_summaries):
+    """analyze_clusters generates a prompt for the Gemini API to analyze the clustering results and returns the response."""
     prompt = f"""
 Return JSON only:
 
@@ -107,6 +118,14 @@ Clusters:
 
 
 def get_llm_analysis(cluster_summaries):
+    """get_llm_analysis retrieves the analysis of the clustering results from the LLM, using caching to avoid redundant calls.
+
+    Args:
+        cluster_summaries (dict): A dictionary containing summaries of the clusters, including top words and sizes.
+
+    Returns:
+        dict: The analysis result from the LLM.
+    """
     key = hash_clusters(cluster_summaries)
 
     if key in LLM_CACHE:
@@ -144,7 +163,18 @@ Return JSON only, no markdown, no code fences, no explanation:
         return []
 
 def review_clusters_chat(agent, texts, vectorizer, config):
-    """Interactive chat loop for reviewing and adjusting KMeans clustering results."""
+    """ review_clusters_chat allows the user to have a conversation with the agent about the clustering results, 
+        including renaming clusters and retraining with different parameters.
+
+    Args:
+        agent (EmailAgent): the email agent containing the clustering strategy and cluster names
+        texts (list): the list of email texts to be clustered
+        vectorizer (Vectorizr): the vectorizer for transforming the texts
+        config (dict): the configuration for the clustering algorithm
+
+    Returns:
+        None
+    """
     print("\n--- Cluster Review ---")
     print("You can now chat with the agent about your clusters.")
     print("Special commands:")
@@ -153,6 +183,7 @@ def review_clusters_chat(agent, texts, vectorizer, config):
     print("  done                     — finish review and proceed\n")
 
     def build_summaries(agent):
+        """build_summaries constructs a summary dictionary for the LLM based on the agent's current report and cluster names."""
         report = agent.report
         labels = agent.cluster_names
         unique, counts = np.unique(labels, return_counts=True)
@@ -163,6 +194,7 @@ def review_clusters_chat(agent, texts, vectorizer, config):
         }
 
     def print_summary(agent):
+        """print_summary displays the current clusters, their names, sizes, and top words for the user to review."""
         for cid, info in build_summaries(agent).items():
             name = agent.cluster_names.get(cid, agent.cluster_names.get(str(cid), f"Cluster {cid}"))
             words = ", ".join(info.get("top_words", [])[:5])
@@ -173,13 +205,21 @@ def review_clusters_chat(agent, texts, vectorizer, config):
     print("Current clusters:")
     print_summary(agent)
 
+    # Initial LLM analysis and naming
     cluster_summaries = build_summaries(agent)
     opening_prompt = "Please name each cluster in a list in the format: <cluster_id>: <name>. Afterwards, provide an overall assessment of the clustering quality and any issues you see with the results."
     history = [{"role": "user", "content": opening_prompt}]
     reply, history = chat_with_agent(cluster_summaries, agent.cluster_names, history)
+
+    # Parse cluster names from LLM response
+    for i in range(agent.strategy.k):
+        if str(i) in reply:
+            name = reply.split(f"{i}:")[1].split("\n")[0].strip()
+            agent.cluster_names[i] = name
+            agent.cluster_names[str(i)] = name
     print(f"Agent: {reply}\n")
 
-
+    # Enter the chat loop for user interaction
     while True:
         user_input = input("You: ").strip()
         if not user_input:
