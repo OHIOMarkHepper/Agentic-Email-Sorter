@@ -11,14 +11,26 @@ class DatabaseManager:
             raise ValueError("db_path must point to a .db file")
         self.db_path = db_path
 
-    def create_clusters_table(self):
+    def create_emails_table(self):
+        """ Generates an email table based on the standard IMAP format """ 
+        
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS emails (
-                    id            INTEGER PRIMARY KEY,  -- auto-assigned when omitted
-                    cluster_id    INTEGER,
-                    cluster_label TEXT,
-                    body          TEXT
+                    id              TEXT PRIMARY KEY,   -- RFC 2822 Message-ID
+                    thread_id       TEXT,
+                    sender          TEXT,
+                    sender_domain   TEXT,
+                    recipients      TEXT,               -- JSON array
+                    subject         TEXT,
+                    body            TEXT,
+                    timestamp       TEXT,
+                    has_attachment  INTEGER,            -- 0 or 1
+                    labels          TEXT,               -- JSON array
+                    raw_source      TEXT,
+                    cluster_id      INTEGER,
+                    cluster_label   TEXT,
+                    fetched_at      TEXT DEFAULT (datetime('now'))
                 )
             """)
 
@@ -31,6 +43,19 @@ class DatabaseManager:
                 INSERT INTO emails (cluster_id, cluster_label, body)
                 VALUES (:cluster_id, :cluster_label, :body)
             """, emails)
+    
+    def save_email_records_bulk(self, records: list[dict]):
+        if not records:
+            return
+        with sqlite3.connect(self.db_path) as conn:
+            conn.executemany("""
+                INSERT OR IGNORE INTO emails
+                    (id, thread_id, sender, sender_domain, recipients,
+                    subject, body, timestamp, has_attachment, labels, raw_source)
+                VALUES
+                    (:id, :thread_id, :sender, :sender_domain, :recipients,
+                    :subject, :body, :timestamp, :has_attachment, :labels, :raw_source)
+            """, records)
     
     def get_column_names(self) -> list[str]:
         with sqlite3.connect(self.db_path) as conn:

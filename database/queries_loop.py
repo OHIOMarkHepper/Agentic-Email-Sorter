@@ -14,8 +14,9 @@ class queries_loop:
         self.db_manager.db_path = db_path  # <-- sync the manager's path
 
     def run(self):
+        """run """
         while True:
-            self.query_clusters()
+            self.query_clusters() #
             self.query_columns()
             print(f"Not implemented yet. This will be the loop for querying the database of classified emails and clusters.")
             break
@@ -32,7 +33,7 @@ class queries_loop:
         """query_columns: Queries the database for column names and prints them."""
         columns = self.db_manager.get_column_names()
         print("Columns found in the database:")
-        for column in columns:
+        for column in columns: 
             print(f"- {column}")
 
     def query_emails_by_cluster(self, cluster_label):

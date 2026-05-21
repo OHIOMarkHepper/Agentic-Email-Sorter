@@ -36,6 +36,15 @@ def select_best_k(X, k_range=(2, 10)):
 
 
 def get_top_words(model, feature_names, top_n=10):
+    """ 
+    Args:
+        model (ClusteringStrategy): The clustering model.
+        feature_names (list): The names of the features.
+        top_n (int, optional): _description_. Defaults to 10.
+
+    Returns:
+        clusters (dict): A dictionary where each key is a cluster index and the value is a dictionary containing the top words.
+    """
     clusters = {}
 
     for i, center in enumerate(model.cluster_centers_):

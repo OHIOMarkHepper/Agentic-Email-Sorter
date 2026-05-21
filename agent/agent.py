@@ -27,6 +27,7 @@ class EmailAgent:
         self.report = report
 
     def classify(self, email):
+
         label = self.strategy.predict([email])[0]
 
         if isinstance(label, int):  # KMeans case
