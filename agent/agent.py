@@ -1,5 +1,6 @@
 from cache.cache import CACHE, CLUSTER_STATE
 from agent.llm import get_llm_analysis
+from agent.providers import get_llm_provider
 import numpy as np
 import hashlib, json
 
@@ -7,12 +8,19 @@ import hashlib, json
 class EmailAgent:
     """EmailAgent is the main class that handles the training and classification of emails using a specified strategy and vectorizer. 
        It also integrates LLM analysis for cluster interpretability."""
-
-    def __init__(self, strategy, vectorizer, llm_enabled=True):
-        self.strategy = strategy
-        self.vectorizer = vectorizer
-        self.llm_enabled = llm_enabled
-        self.cluster_names = {}
+    def __init__(self, strategy, vectorizer, llm_enabled=True, config=None):
+            self.strategy = strategy
+            self.vectorizer = vectorizer
+            self.llm_enabled = llm_enabled
+            self.cluster_names = {}
+            # Initialize LLM provider if enabled
+            if llm_enabled and config:
+                try:
+                    self.llm_provider = get_llm_provider(config)
+                except Exception:
+                    self.llm_provider = None
+            else:
+                self.llm_provider = None
 
     def train(self, texts):
         self.strategy.fit(texts, self.vectorizer)

@@ -162,11 +162,9 @@ def load_data(filepath):
     
     # imap path (not implemented yet)
     if filepath.suffix.lower() == ".imap":
-        raise NotImplementedError("IMAP loading not implemented yet.")
         from processing.imap_loader import IMAPSource
-        # source = IMAPSource(...)
-        # return source.get_emails()
-    
+        source = IMAPSource(filepath)
+        return source.get_emails()
     # CSV path
     if filepath.suffix.lower() == ".csv":
         df = pd.read_csv(filepath)

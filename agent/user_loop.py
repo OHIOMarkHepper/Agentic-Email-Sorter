@@ -9,6 +9,7 @@ from processing.input import get_multiline_input
 from processing.data import load_data
 from config.config import get_default_config
 from database.queries import DatabaseManager
+from agent.providers import get_llm_provider
 import json
 import re
 import numpy as np
@@ -216,7 +217,7 @@ def user_loop(filepath, config):
     vectorizer = build_vectorizer(config)
     X = vectorizer.fit_transform(texts)
 
-    get_client()  # Ensure Gemini client is initialized before proceeding
+    get_llm_provider(config) # Initialize the LLM provider if enabled
 
     print("Would you like suggested clusters from KMeans or user-defined clusters?")
     print("type 'k' for KMeans or 'u' for user-defined")
