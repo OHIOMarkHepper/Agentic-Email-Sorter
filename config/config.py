@@ -15,5 +15,25 @@ def get_default_config():
         "max_features": 5000,   # maximum number of features to consider
         "k": 10,                # number of top features to select based on chi-squared test
         "threshold": 0.25,      # threshold for selecting features based on chi-squared scores
-        "db_path": "./email_data/test.db"  # default path to the SQLite database
+        "db_path": "./email_data/test.db", # default path to the SQLite database
+        "llm": 
+            {
+                "provider": "ollama",
+                "model": "qwen3.5:9b",
+                "base_url": "http://localhost:11434",
+                "api_key": "none"
+            }
+
+    }
+
+def get_IMAP_config():
+    """get_IMAP_config - get the configuration for the IMAP source
+    Returns:
+        dict: the configuration
+    """
+
+    return {
+        "imap_server": "imap.gmail.com",  # server to connect to
+        "email_user": "your_email@gmail.com",  # email address to use
+        "access_token": "your_access_token"  # OAuth2 token string
     }

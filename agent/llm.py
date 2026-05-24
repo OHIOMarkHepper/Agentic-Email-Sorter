@@ -3,6 +3,8 @@ import hashlib
 from cache.cache import LLM_CACHE
 from google import genai
 from ml.strategies import KMeansStrategy
+from agent.providers import get_llm_provider
+from config.config import get_default_config
 import numpy as np
 import os
 
@@ -33,7 +35,8 @@ and answer any questions they have about the results. Be concise and specific.""
         role_label = "User" if turn["role"] == "user" else "Assistant"
         prompt += f"{role_label}: {turn['content']}\n"
 
-    result = call_gemini(prompt)
+    provider = get_llm_provider(get_default_config())
+    result = provider.generate(prompt)
     history.append({"role": "assistant", "content": result})
     return result, history
 
@@ -56,7 +59,7 @@ class LLMAnalysis:
         key = self._hash_clusters(cluster_summaries)
         if key in self.cache:
             return self.cache[key]
-        result = self._call_gemini(cluster_summaries)
+        result = self._provider.generate(cluster_summaries)
         try:
             parsed = json.loads(result)
         except:
@@ -74,17 +77,17 @@ class LLMAnalysis:
         return hashlib.md5(raw).hexdigest()
 
     def _call_gemini(self, cluster_summaries):
-        return call_gemini(analyze_clusters(cluster_summaries))
+        provider = get_llm_provider(get_default_config())
+        return provider.generate(analyze_clusters(cluster_summaries))
 
 
 def call_gemini(prompt):
-    """call_gemini sends a prompt to the Gemini API and returns the response text."""
+    """provider.generate sends a prompt to the Gemini API and returns the response text."""
     response = get_client().models.generate_content(
         model="gemini-2.5-flash",
         contents=prompt
     )
-    return response.text
-
+    return response
 
 def hash_clusters(cluster_summaries):
     """ hash_clusters produces a stable hash of the current clustering summaries for caching purposes.
@@ -113,8 +116,10 @@ Return JSON only:
 
 Clusters:
 {json.dumps(cluster_summaries, indent=2)}
-"""
-    return call_gemini(prompt)
+""" 
+    provider = get_llm_provider(get_default_config())
+    response = provider.generate(prompt)
+    return response
 
 
 def get_llm_analysis(cluster_summaries):
@@ -133,15 +138,11 @@ def get_llm_analysis(cluster_summaries):
 
     result = analyze_clusters(cluster_summaries)
 
-    try:
+    try: # check for JSON decode error
         parsed = json.loads(result)
-    except:
-        parsed = {
-            "cluster_names": {},
-            "quality": "unknown",
-            "issues": [],
-            "suggested_params": {}
-        }
+    except json.JSONDecodeError as e:
+        print(f"Warning: LLM response was not valid JSON ({e}). Raw:\n{result}")
+        parsed = {"cluster_names": {}, "quality": "unknown", "issues": [], "suggested_params": {}}
 
     LLM_CACHE[key] = parsed
     return parsed
@@ -153,7 +154,8 @@ def generate_category_examples(category_name):
 Generate 6 short example phrases or keywords that would appear in emails belonging to the category: "{category_name}".
 Return JSON only, no markdown, no code fences, no explanation:
 {{"examples": ["phrase1", "phrase2", "phrase3", "phrase4", "phrase5", "phrase6"]}}"""
-    result = call_gemini(prompt)
+    provider = get_llm_provider(get_default_config())
+    result = provider.generate(prompt)
     try:
         clean = result.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
         parsed = json.loads(clean)

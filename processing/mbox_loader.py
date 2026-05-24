@@ -3,6 +3,9 @@ from processing.data import (
     get_body, has_attachment, get_recipients,
     extract_sender_domain, EmailRecord, save_to_db
 )
+from google_auth_httplib2 import InstalledAppFlow
+from google.auth.transport.requests import Request
+import os
 import mailbox
 import pandas as pd
 
