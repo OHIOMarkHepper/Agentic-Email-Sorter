@@ -13,8 +13,10 @@ CACHE = {
 
 # LLM_CACHE is used to store the last signature and result from the LLM to avoid redundant calls
 
-LLM_CACHE = {}
+LLM_CACHE = {
+    "analysis": None
+}
 CLUSTER_STATE = {
     "last_signature": None,
-    "last_llm_result": None
+    "last_llm_result": None,
 }
