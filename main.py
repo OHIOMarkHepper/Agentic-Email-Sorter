@@ -17,7 +17,7 @@ def main():
     print("Welcome to the Email Clustering Agent!")
     print("This agent will help you cluster and understand your email data using machine learning and LLM analysis.\n")
     config = get_default_config()
-    filepath = "./email_data/email_classification_dataset.csv"  # Default path to email data
+    filepath = "./emaildata/email_classification_dataset.csv"  # Default path to email data
     print("Would you like to train your model or view your sorted emails? (type 't' or 'v')")
     choice = input().strip().lower()
     if choice == 't':
