@@ -1,120 +1,226 @@
-from cache.cache import CACHE, CLUSTER_STATE
-from agent.llm import get_llm_analysis
+import json
+import hashlib
 import numpy as np
-import hashlib, json
+
+from cache.cache import CACHE, CLUSTER_STATE, LLM_CACHE
+from agent.llm import get_llm_analysis, chat_with_agent
+from agent.providers import get_llm_provider
+from ml.strategies import KMeansStrategy
 
 
 class EmailAgent:
-    """EmailAgent is the main class that handles the training and classification of emails using a specified strategy and vectorizer. 
-       It also integrates LLM analysis for cluster interpretability."""
-
-    def __init__(self, strategy, vectorizer, llm_enabled=True):
-        self.strategy = strategy
-        self.vectorizer = vectorizer
-        self.llm_enabled = llm_enabled
-        self.cluster_names = {}
-
-    def train(self, texts):
-        self.strategy.fit(texts, self.vectorizer)
-
-        report = self.strategy.summarize()
-
-        if self.llm_enabled:
-            cluster_summaries = self._build_summaries(report)
-            llm_result = get_llm_analysis(cluster_summaries)
-            self.cluster_names = llm_result.get("cluster_names", {})
-
-        self.report = report
-
-    def classify(self, email):
-
-        label = self.strategy.predict([email])[0]
-
-        if isinstance(label, int):  # KMeans case
-            label = self.cluster_names.get(label, f"Cluster_{label}")
-
-        return label
-
-    def _build_summaries(self, report):
-        return {
-            str(k): v for k, v in report.items()
-        }
-    
-    
-
-
-def get_signature(labels, report):
-    """Produces a stable hash of the current clustering state."""
-    raw = json.dumps({
-        "label_counts": {str(k): int(v) for k, v in zip(*np.unique(labels, return_counts=True))},
-        "report_keys": sorted(str(k) for k in report.keys())
-    }, sort_keys=True).encode()
-    return hashlib.md5(raw).hexdigest()
-
-def should_call_llm(sig):
-    """Returns True if the clustering has changed since the last LLM call."""
-    return CLUSTER_STATE["last_signature"] != sig
-
-def build_cluster_summaries(report, labels):
-    """Builds a JSON-serialisable summary dict for the LLM."""
-    unique, counts = np.unique(labels, return_counts=True)
-    summaries = {}
-    for cluster_id, count in zip(unique, counts):
-        entry = dict(report.get(cluster_id, {}))
-        entry["size"] = int(count)
-        summaries[str(cluster_id)] = entry
-    return summaries
-
-
-def run_agent_loop(filepath, config, load_data_func, vectorizer_fn, clustering_fn, report_fn, iterations=3):
-    """run_agent_loop - the main loop of the agent, which loads data, runs clustering, and calls the LLM for analysis
-
-    Args:
-        filepath (string): the path to the data file
-        config (dict): the configuration for the vectorizer and clustering
-        load_data_func (function): the function to load the data
-        vectorizer_fn (function): the function to create the vectorizer
-        clustering_fn (function): the function to perform clustering
-        report_fn (function): the function to generate the report
-        iterations (int, optional): Amount of iterations to run. Defaults to 3.
-
-    Returns:
-        dict: the final LLM analysis result
+    """EmailAgent owns all clustering state and exposes clean methods for
+    training, retraining, relabeling, classifying, and retrieving analysis.
     """
 
-    # Load data and detect schema
-    df, texts, _ = load_data_func(filepath)
+    def __init__(self, strategy, vectorizer, config=None, llm_enabled=True):
+        self.strategy = strategy
+        self.vectorizer = vectorizer
+        self.config = config
+        self.llm_enabled = llm_enabled
+        self.cluster_names: dict = {}
+        self.report: dict = {}
+        self._analysis: dict = {}   # cached result from the last LLM analysis call
+        self._texts: list = []      # kept so retrain() can refit without re-loading data
 
-    # Create vectorizer and transform texts
-    vectorizer = vectorizer_fn(config)
-    X = vectorizer.fit_transform(texts)
+    # ------------------------------------------------------------------
+    # Core training
+    # ------------------------------------------------------------------
 
-    # Cluster data
-    model, labels = clustering_fn(X, config)
+    def train(self, texts: list) -> dict:
+        """Fit the strategy, summarize clusters, and run LLM analysis.
 
-    # Generate report
-    report = report_fn(model, vectorizer.get_feature_names_out())
+        Args:
+            texts: The list of email body strings to train on.
 
-    # Agent loop with LLM analysis
-    for i in range(iterations):
-        print(f"\n--- Iteration {i+1} ---")
+        Returns:
+            The LLM analysis dict (cluster_names, quality, issues, …).
+        """
+        self._texts = texts
+        self.strategy.fit(texts, self.vectorizer)
+        self.report = self.strategy.summarize()
 
-        sig = get_signature(labels, report)
+        if self.llm_enabled:
+            summaries = self.get_cluster_summaries()
+            self._analysis = get_llm_analysis(summaries)
+            # Auto-populate cluster_names from LLM result (can be overridden by relabel)
+            for k, v in self._analysis.get("cluster_names", {}).items():
+                self.cluster_names[k] = v
+                try:
+                    self.cluster_names[int(k)] = v
+                except ValueError:
+                    pass
 
-        # Check if we need to call the LLM (if the clustering changed significantly)
-        if should_call_llm(sig):
+        return self._analysis
 
-            cluster_summaries = build_cluster_summaries(report, labels)
-            llm_result = get_llm_analysis(cluster_summaries)
+    # ------------------------------------------------------------------
+    # Retrain
+    # ------------------------------------------------------------------
 
-            CLUSTER_STATE["last_signature"] = sig
-            CLUSTER_STATE["last_llm_result"] = llm_result
+    def retrain(self, k: int) -> dict:
+        """Replace the current strategy with a new KMeans model at a given K
+        and re-run the full training pipeline.
 
-            print("LLM ran")
-        else:
-            llm_result = CLUSTER_STATE["last_llm_result"]
-            print("LLM skipped (cached)")
+        Args:
+            k: Number of clusters for the new KMeans model.
 
-        print("Quality:", llm_result.get("quality"))
+        Returns:
+            Updated LLM analysis dict.
+        """
+        if not self._texts:
+            raise RuntimeError("No training data available. Call train() first.")
+        if self.config is None:
+            raise RuntimeError("Agent was created without a config; cannot retrain.")
 
-    return llm_result
+        new_strategy = KMeansStrategy(self.config, forced_k=k)
+        self.strategy = new_strategy
+        # cluster_names are stale after a retrain — clear them so the LLM re-names
+        self.cluster_names = {}
+        return self.train(self._texts)
+
+    # ------------------------------------------------------------------
+    # Relabel
+    # ------------------------------------------------------------------
+
+    def relabel(self, cluster_id: int, new_name: str) -> None:
+        """Rename a cluster. Stores both int and str keys for safe lookup.
+
+        Args:
+            cluster_id: The integer id of the cluster to rename.
+            new_name:   The new human-readable label.
+        """
+        self.cluster_names[cluster_id] = new_name
+        self.cluster_names[str(cluster_id)] = new_name
+
+    # ------------------------------------------------------------------
+    # Classify
+    # ------------------------------------------------------------------
+
+    def classify(self, email: str) -> str:
+        """Classify a single email and return its cluster name.
+
+        Args:
+            email: Raw email body text.
+
+        Returns:
+            The cluster name string.
+        """
+        label = self.strategy.predict([email])[0]
+        if isinstance(label, int):
+            label = self.cluster_names.get(label,
+                    self.cluster_names.get(str(label), f"Cluster_{label}"))
+        return label
+
+    # ------------------------------------------------------------------
+    # Analysis / summaries
+    # ------------------------------------------------------------------
+
+    def get_cluster_summaries(self) -> dict:
+        """Build a JSON-serialisable summary dict that merges top_words from
+        the report with live email counts from the strategy labels.
+
+        Returns:
+            Dict keyed by cluster id (int) with 'top_words' and 'size'.
+        """
+        labels = self.strategy.labels
+        unique, counts = np.unique(labels, return_counts=True)
+        size_map = dict(zip(unique, counts))
+        return {
+            k: {**v, "size": int(size_map.get(k, 0))}
+            for k, v in self.report.items()
+        }
+
+    def get_analysis(self) -> dict:
+        """Return the cached LLM analysis from the last train/retrain call.
+
+        Returns:
+            Dict with keys: cluster_names, quality, issues, suggested_params.
+        """
+        return self._analysis
+
+    # ------------------------------------------------------------------
+    # Save
+    # ------------------------------------------------------------------
+
+    def save(self, db_path: str) -> None:
+        """Persist classified emails to a SQLite database.
+
+        Args:
+            db_path: Path to the .db file to write to.
+        """
+        from database.queries import DatabaseManager
+
+        db = DatabaseManager(db_path)
+        db.create_emails_table()
+        db.save_emails_bulk([
+            {
+                "cluster_id": int(label),
+                "cluster_label": self.cluster_names.get(
+                    int(label),
+                    self.cluster_names.get(str(label), f"Cluster {label}")
+                ),
+                "body": text,
+            }
+            for text, label in zip(self._texts, self.strategy.labels)
+        ])
+
+    # ------------------------------------------------------------------
+    # LLM chat (used by review_clusters_chat in user_loop.py)
+    # ------------------------------------------------------------------
+
+    def chat(self, user_message: str, history: list | None = None) -> tuple[str, list]:
+        """Send one turn of conversation about the current clusters.
+
+        Args:
+            user_message: The user's message text.
+            history:      Conversation history list of {role, content} dicts.
+                          Pass None to start a fresh conversation.
+
+        Returns:
+            (reply_text, updated_history)
+        """
+        if history is None:
+            history = []
+        history.append({"role": "user", "content": user_message})
+        reply, history = chat_with_agent(
+            self.get_cluster_summaries(),
+            self.cluster_names,
+            history
+        )
+        return reply, history
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _parse_names_from_reply(reply: str) -> dict:
+        """Extract a {cluster_id: name} map from the LLM's JSON reply block.
+        Tolerates markdown fences and trailing commentary.
+
+        Args:
+            reply: Raw LLM response string.
+
+        Returns:
+            Dict with both int and str keys for each cluster id found.
+        """
+        try:
+            clean = (reply.strip()
+                     .removeprefix("```json")
+                     .removeprefix("```")
+                     .removesuffix("```")
+                     .strip())
+            start, end = clean.index("{"), clean.rindex("}") + 1
+            parsed = json.loads(clean[start:end])
+            name_map = {}
+            for k, v in parsed.items():
+                try:
+                    cid = int(k)
+                    name_map[cid] = str(v).strip()
+                    name_map[str(cid)] = str(v).strip()
+                except ValueError:
+                    continue
+            return name_map
+        except (ValueError, json.JSONDecodeError) as e:
+            print(f"  Warning: could not parse cluster names from reply ({e})")
+            return {}
