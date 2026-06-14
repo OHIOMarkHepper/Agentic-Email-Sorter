@@ -8,7 +8,7 @@ from agent.providers import get_llm_provider
 import json
 import hashlib
 import numpy as np
-from config import get_default_config
+from config.config import get_default_config
 from cache.cache import CACHE, CLUSTER_STATE, LLM_CACHE
 from agent.llm import get_llm_analysis, chat_with_agent
 from agent.providers import get_llm_provider
@@ -20,7 +20,7 @@ class EmailAgent:
     training, retraining, relabeling, classifying, and retrieving analysis.
     """
 
-    def __init__(self, strategy, vectorizer, config=None, llm_enabled= get_default_config().get("llm").get("Enabled")):
+    def __init__(self, strategy, vectorizer, config=None, llm_enabled= True):
         self.strategy = strategy
         self.vectorizer = vectorizer
         self.config = config
