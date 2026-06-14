@@ -1,10 +1,14 @@
+"""
+This file is responsible for holding the EmailAgent class. 
+"""
+
 from cache.cache import CACHE, CLUSTER_STATE
 from agent.llm import get_llm_analysis
 from agent.providers import get_llm_provider
 import json
 import hashlib
 import numpy as np
-
+from config import get_default_config
 from cache.cache import CACHE, CLUSTER_STATE, LLM_CACHE
 from agent.llm import get_llm_analysis, chat_with_agent
 from agent.providers import get_llm_provider
@@ -16,7 +20,7 @@ class EmailAgent:
     training, retraining, relabeling, classifying, and retrieving analysis.
     """
 
-    def __init__(self, strategy, vectorizer, config=None, llm_enabled=True):
+    def __init__(self, strategy, vectorizer, config=None, llm_enabled= get_default_config().get("llm").get("Enabled")):
         self.strategy = strategy
         self.vectorizer = vectorizer
         self.config = config
@@ -101,18 +105,20 @@ class EmailAgent:
 
     def classify(self, email: str) -> str:
         """Classify a single email and return its cluster name.
-
+ 
         Args:
             email: Raw email body text.
-
+ 
         Returns:
             The cluster name string.
         """
         label = self.strategy.predict([email])[0]
-        if isinstance(label, int):
+        if isinstance(label, (int, np.integer)):
+            label = int(label)
             label = self.cluster_names.get(label,
                     self.cluster_names.get(str(label), f"Cluster_{label}"))
-        return label
+        return str(label)
+
 
     # ------------------------------------------------------------------
     # Analysis / summaries

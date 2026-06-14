@@ -1,3 +1,8 @@
+"""
+@note This module contains the logic for querying the database and retrieving email data. It uses the `sqlite3` library to interact with the SQLite database. 
+      The `DatabaseManager` class provides methods for creating an email table, saving email data in bulk, and executing SQL queries. 
+"""
+
 import sqlite3
 import re
 import numpy as np

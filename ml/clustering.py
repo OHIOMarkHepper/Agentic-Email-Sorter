@@ -1,3 +1,8 @@
+"""
+@note This module is responsible for the clustering process. It uses the `MiniBatchKMeans` algorithm from scikit-learn 
+      and calculates the silhouette score to determine the best number of clusters. 
+"""
+
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.metrics import silhouette_score
 import numpy as np

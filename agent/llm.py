@@ -1,3 +1,9 @@
+
+"""
+This module contains the logic for interacting with an LLM provider to generate category examples.
+It uses the `genai` library to communicate with the OpenAI API.
+"""
+
 import json
 import hashlib
 from cache.cache import LLM_CACHE

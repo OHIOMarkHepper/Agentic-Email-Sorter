@@ -1,3 +1,9 @@
+"""
+@note This module is responsible for loading email data from a CSV file, saving it to a SQLite database, and executing SQL queries. 
+      It uses the `pandas` library to handle data manipulation and the `sqlite3` library to interact with the SQLite database. 
+      The `DataProcessor` class provides methods for loading email data from a CSV file, saving it to a SQLite database, and executing SQL queries. 
+"""
+
 import imaplib
 import email as email_lib
 import pandas as pd

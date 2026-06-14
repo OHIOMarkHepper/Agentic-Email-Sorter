@@ -1,3 +1,9 @@
+"""
+@note This module is responsible for loading email data from a MBOX file, saving it to a SQLite database, and executing SQL queries. 
+      It uses the `pandas` library to handle data manipulation and the `sqlite3` library to interact with the SQLite database. 
+      The `DataProcessor` class provides methods for loading email data from a CSV file, saving it to a SQLite database, and executing SQL queries. 
+"""
+
 from processing.base import EmailSource
 from processing.data import (
     get_body, has_attachment, get_recipients,

@@ -15,6 +15,7 @@ class GeminiProvider(LLMProvider):
     def __init__(self):
         self._client = None
 
+    # Function to generate a response based on a prompt
     def generate(self, prompt: str) -> str:
         if self._client is None:
             key = input("Enter your Gemini API key: ").strip()
@@ -31,6 +32,7 @@ class OllamaProvider(LLMProvider):
         self.model = model
         self.base_url = base_url
 
+    # Function to generate a response based on a prompt
     def generate(self, prompt: str) -> str:
         import requests
         resp = requests.post(
@@ -46,7 +48,8 @@ class CustomAPIProvider(LLMProvider):
         self.base_url = base_url
         self.api_key = api_key
         self.model = model
-
+    
+    #Fumction to generate a response based on a prompt
     def generate(self, prompt: str) -> str:
         import requests
         resp = requests.post(
@@ -75,8 +78,9 @@ def get_llm_provider(cfg: dict) -> LLMProvider:
         LLMProvider: The appropriate LLMProvider instance.
     """
     llm_cfg = cfg.get("llm", {})
-    kind = llm_cfg.get("provider", "gemini")
+    kind = llm_cfg.get("provider", "gemini") # default to gemini if not specified
 
+    # elif loop to find the appropriate provider
     if kind == "gemini":
         return GeminiProvider()
     elif kind == "ollama":

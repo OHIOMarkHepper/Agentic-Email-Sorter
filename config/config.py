@@ -1,5 +1,5 @@
 
-
+# Holds the configs for various aspects of the application
 
 def get_default_config():
     """get_default_config - get the default configuration for the vectorizer and clustering
@@ -18,12 +18,12 @@ def get_default_config():
         "db_path": "./emaildata/test.db", # default path to the SQLite database
         "llm": 
             {
+                "Enabled": True,
                 "provider": "ollama",
                 "model": "qwen3.5:9b",
                 "base_url": "http://localhost:11434",
                 "api_key": "none"
             }
-
     }
 
 def get_IMAP_config():

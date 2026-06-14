@@ -1,3 +1,10 @@
+"""
+@note This module is responsible for the user loop where they can paste emails and see how the agent classifies them. 
+      It uses the `EmailAgent` to handle the classification process. The user can exit the classifier by typing 'done'. 
+      The summary of each cluster is printed at the end of the session. The `_print_summary` function is used to print a one-line summary for each cluster. 
+    The `classify_loop` function continuously prompts the user for emails and classifies them using the `EmailAgent`. It prints the classification result for each email. The `_print_summary` function is used to print a one-line summary for each cluster. The `classify_loop` function continuously prompts the user for emails and classifies them using the `EmailAgent`. It prints the classification result for each email. The `_print_summary` function is used to print a one-line summary for each cluster. The `classify_loop` function continuously prompts the user for emails and classifies them using the `EmailAgent`. It prints the classification result for each email. The `_print_summary` function is used to print a one-line summary for each cluster. The `classify_loop` function continuously prompts the user for emails and classifies them using the `EmailAgent`. It prints the classification result for each email. The `_print_summary` function is used to print a one-line summary for each cluster.
+"""
+
 from agent.agent import EmailAgent
 from agent.llm import generate_category_examples
 from ml.vectorizer import build_vectorizer
