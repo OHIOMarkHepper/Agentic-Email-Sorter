@@ -31,6 +31,8 @@ export default function EmailClassifier() {
         onChange={(e) => setText(e.target.value)}
         placeholder="Paste email text here..."
       />
+       <p>
+       </p>
       <button onClick={handleClassify} disabled={loading || !text.trim()}>
         {loading ? "Classifying..." : "Classify"}
       </button>

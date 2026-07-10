@@ -1,0 +1,5 @@
+__pycache__/
+gemini-env/
+emaildata/*
+results.txt
+node_modules

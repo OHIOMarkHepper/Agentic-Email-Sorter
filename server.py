@@ -15,7 +15,6 @@ from processing.data import load_data
 from config.config import get_default_config
 from database.queries import DatabaseManager
 
-
 app = FastAPI()
 
 # CORS — allows a local frontend (e.g. localhost:3000) to call this API
@@ -29,7 +28,7 @@ app.add_middleware(
 # Module-level singleton — holds the trained agent between requests.
 agent: EmailAgent | None = None
 
-DEFAULT_DB_PATH = "./emaildata/emails.db"
+DEFAULT_DB_PATH = get_default_config().get("db_path")
 
 
 # ------------------------------------------------------------------

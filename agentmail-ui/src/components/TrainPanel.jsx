@@ -22,10 +22,10 @@ export default function TrainPanel({ onTrained }) {
     }
   }
 
+  /// The main UI for training is here
   return (
     <div style={{ border: "1px solid #ccc", padding: "1rem", borderRadius: "8px" }}>
       <h2>Train Model</h2>
-
       <label style={{ display: "block", marginBottom: "0.5rem" }}>
         Data file path:
         <input
