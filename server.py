@@ -290,3 +290,32 @@ def get_db_clusters(db_path: str = DEFAULT_DB_PATH):
             detail="No emails in the database yet. POST to /emails/save first."
         )
     return {"clusters": labels}
+
+@app.get("/strategies", status_code=200)
+def get_strategies(db_path: str = DEFAULT_DB_PATH):
+    """Return all strategies stored in the database."""
+    db = _get_db(db_path)
+    rows = db.query_strategies()
+    if not rows:
+        raise HTTPException(
+            status_code=404,
+            detail="No strategies found in the database."
+        )
+    columns = db.get_column_names()
+    return [dict(zip(columns, row)) for row in rows]
+
+@app.get("/strategies{id}", status_code=200)
+def get_strategy(db_path: str = DEFAULT_DB_PATH, id: int = None):
+    """Return a strategy with the given ID."""
+    db = _get_db(db_path)
+    if not id:
+        raise HTTPException(
+            status_code=400,
+            detail="ID is required."
+        )
+    row = db.query_strategy(id)
+    if not row:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No strategy found with ID {id}."
+        )

@@ -18,7 +18,6 @@ class DatabaseManager:
 
     def create_emails_table(self):
         """ Generates an email table based on the standard IMAP format """ 
-        
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS emails (
@@ -38,6 +37,25 @@ class DatabaseManager:
                     fetched_at      TEXT DEFAULT (datetime('now'))
                 )
             """)
+    def create_strategies_table(self):
+        """ Generates a meta table to store metadata about the database """
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS strategies (
+                    id              TEXT PRIMARY KEY,
+                    name             TEXT NOT NULL,
+                    path             TEXT NOT NULL,
+                    created_at       TEXT DEFAULT (datetime('now'))
+                )
+            """)
+    
+    def save_model(self, model):
+        """ Saves a trained machine learning model to the database """
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                INSERT INTO strategies (name, path)
+                VALUES (?, ?)
+            """, ("model", "path/to/model.pkl"))
 
     def save_emails_bulk(self, emails: list[dict]):
         """emails: list of dicts with keys cluster_id, cluster_label, body — id is auto-assigned"""
